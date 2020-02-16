@@ -11,8 +11,49 @@ class MoviesController < ApplicationController
   end
 
   def index
-    @movies = Movie.find(:all, :order => (params[:sort_by]))
-    @sort_column = params[:sort_by]
+   #Storing all unique ratings from table
+    @all_ratings=Movie.uniq.pluck(:rating)
+    
+    sort_column = params[:sort_column]
+    
+    #Below is via session else default sort column implementation
+    if(!sort_column and session[:sort_column])
+      sort_column = session[:sort_column]
+    else  
+      sort_column ||='release_date'
+    end
+    
+    session[:sort_column] = sort_column
+    
+    sort_direction = params[:sort_direction]
+    
+    #Below is via session else default sort direction implementation
+    if(!sort_direction and session[:sort_direction])
+      sort_direction = session[:sort_direction]
+    else
+      sort_direction ||= "desc"
+    end
+    session[:sort_direction] = sort_direction
+    
+    @ratings_selected = params[:ratings]
+    
+    if(@ratings_selected)
+      @ratings_selected_keys = @ratings_selected.keys
+    end
+    
+    #Below is via session else default ratings(ie:all) implementation
+    if(!@ratings_selected and session[:ratings] )
+      @ratings_selected = session[:ratings]
+      @ratings_selected_keys = session[:ratings].keys
+    else  
+      @ratings_selected_keys||=@all_ratings
+    end
+    
+    session[:ratings] = @ratings_selected
+    
+    #Retrieve the filtered columns ordered by the given column and given direction.
+    @movies = Movie.where(rating: @ratings_selected_keys).order(sort_column +" "+ sort_direction)
+
   end
 
   def new
